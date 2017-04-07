@@ -63,6 +63,8 @@ open class KSTokenField: UITextField {
    fileprivate var _removesTokensOnEndEditing = true
    fileprivate var _scrollView = UIScrollView(frame: .zero)
    fileprivate var _scrollPoint = CGPoint.zero
+   fileprivate var lineNumber = 1
+   fileprivate var initialX: CGFloat = 30
    fileprivate var _direction: KSTokenViewScrollDirection = .vertical {
       didSet {
          if (oldValue != _direction) {
@@ -386,19 +388,19 @@ open class KSTokenField: UITextField {
       }
       
       if (_state == .closed) {
-         return CGPoint(x: _marginX! + _bufferX!, y: _selfFrame!.size.height)
+         return CGPoint(x: initialX + _bufferX!, y: _selfFrame!.size.height)
       }
       
       if (_direction == .horizontal) {
          return _layoutTokensHorizontally()
       }
       
-      var lineNumber = 1
+      lineNumber = 1
       let leftMargin = _leftViewRect().width
       let rightMargin = _rightViewRect().width
       let tokenHeight = _font!.lineHeight + _paddingY!;
       
-      var tokenPosition = CGPoint(x: _marginX!, y: _marginY!)
+      var tokenPosition = CGPoint(x: initialX, y: _marginY!)
       
       for token: KSToken in tokens {
          let width = KSUtils.getRect(token.title as NSString, width: bounds.size.width, font: _font!).size.width + ceil(_paddingX!*2+1)
@@ -446,7 +448,7 @@ open class KSTokenField: UITextField {
       let leftMargin = _leftViewRect().width
       let tokenHeight = _font!.lineHeight + _paddingY!;
       
-      var tokenPosition = CGPoint(x: _marginX!, y: _marginY!)
+      var tokenPosition = CGPoint(x: initialX, y: _marginY!)
       
       for token: KSToken in tokens {
          let width = KSUtils.getRect(token.title as NSString, width: bounds.size.width, font: _font!).size.width + ceil(_paddingX!*2+1)
@@ -488,18 +490,30 @@ open class KSTokenField: UITextField {
       if (!_setupCompleted) {return .zero}
       
       if (tokens.count == 0 || _caretPoint == nil) {
-         return CGRect(x: _leftViewRect().width + _marginX! + _bufferX!, y: _leftViewRect().origin.y, width: bounds.size.width-5, height: bounds.size.height)
+         return CGRect(x: _leftViewRect().width + initialX + _bufferX!, y: getPositionY(lineNumber), width: bounds.size.width-5, height: bounds.size.height)
       }
       
       if (tokens.count != 0 && _state == .closed) {
-         return CGRect(x: _leftViewRect().maxX + _marginX! + _bufferX!, y: _leftViewRect().origin.y, width: (frame.size.width - _caretPoint!.x - _marginX!), height: bounds.size.height)
+         return CGRect(x: _leftViewRect().maxX + initialX + _bufferX!, y: getPositionY(1), width: (frame.size.width - _caretPoint!.x - _marginX!), height: bounds.size.height)
       }
       
       return CGRect(x: _caretPoint!.x, y: floor((_caretPoint!.y - font!.lineHeight - (_marginY!))), width: (frame.size.width - _caretPoint!.x - _marginX!), height: bounds.size.height)
    }
+    
+   fileprivate func getPositionY(_ lineNumber: Int) -> CGFloat {
+      let tokenHeight = _font!.lineHeight + _paddingY!;
+      let tokenPositionY = _marginY! + ((tokenHeight + _marginY!)  * CGFloat(lineNumber - 1))
+      var positionY = (lineNumber == 1 && tokens.count == 0) ? _selfFrame!.size.height: (tokenPositionY + tokenHeight + _marginY!)
+      _scrollView.contentSize = CGSize(width: _scrollView.frame.width, height: positionY)
+      if (positionY > maximumHeight) {
+         positionY = maximumHeight
+      }
+        
+      return floor(positionY - font!.lineHeight - _marginY!)
+    }
    
    override open func leftViewRect(forBounds bounds: CGRect) -> CGRect {
-      return CGRect(x: _marginX!, y: (_selfFrame != nil) ? (_selfFrame!.height - _leftViewRect().height)*0.5: (bounds.height - _leftViewRect().height)*0.5, width: _leftViewRect().width, height: ceil(_leftViewRect().height))
+      return CGRect(x: initialX, y: (_selfFrame != nil) ? (_selfFrame!.height - _leftViewRect().height)*0.5: (bounds.height - _leftViewRect().height)*0.5, width: _leftViewRect().width, height: ceil(_leftViewRect().height))
    }
    
    override open func textRect(forBounds bounds: CGRect) -> CGRect {
@@ -610,9 +624,9 @@ open class KSTokenField: UITextField {
    }
    
    fileprivate func _initPlaceholderLabel() {
-      let xPos = _marginX!
+      let xPos: CGFloat = initialX
       if (_placeholderLabel == nil) {
-         _placeholderLabel = UILabel(frame: CGRect(x: xPos, y: leftView!.frame.origin.y, width: _selfFrame!.width - xPos - _leftViewRect().size.width, height: _leftViewRect().size.height))
+         _placeholderLabel = UILabel(frame: CGRect(x: xPos, y: getPositionY(lineNumber), width: _selfFrame!.width - xPos - _leftViewRect().size.width, height: _leftViewRect().size.height))
          _placeholderLabel?.textColor = placeHolderColor
          _placeholderLabel?.font = _font
          _scrollView.addSubview(_placeholderLabel!)

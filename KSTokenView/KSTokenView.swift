@@ -68,7 +68,8 @@ import UIKit
    @objc optional func tokenView(_ tokenView: KSTokenView, didSelectToken token: KSToken)
    @objc optional func tokenViewDidBeginEditing(_ tokenView: KSTokenView)
    @objc optional func tokenViewDidEndEditing(_ tokenView: KSTokenView)
-   
+   @objc optional func tokenViewWillChangeText(_ tokenView: KSTokenView)
+    
    func tokenView(_ token: KSTokenView, performSearchWithString string: String, completion: ((_ results: Array<AnyObject>) -> Void)?)
    func tokenView(_ token: KSTokenView, displayTitleForObject object: AnyObject) -> String
    @objc optional func tokenView(_ token: KSTokenView, withObject object: AnyObject, tableView: UITableView, cellForRowAtIndexPath indexPath: IndexPath) -> UITableViewCell
@@ -100,7 +101,7 @@ open class KSTokenView: UIView {
    fileprivate var _resultArray = [AnyObject]()
    fileprivate var _showingSearchResult = false
    fileprivate var _indicator = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.gray)
-   fileprivate let _searchResultHeight: CGFloat = 200.0
+   fileprivate let _searchResultHeight: CGFloat = 220.0
    fileprivate var _lastSearchString: String = ""
    fileprivate var _intrinsicContentHeight: CGFloat = UIViewNoIntrinsicMetric
    
@@ -155,7 +156,7 @@ open class KSTokenView: UIView {
       }
    }
    
-   /// Default is (TokenViewWidth, 200)
+   /// Default is (TokenViewWidth, 220)
    open var searchResultSize: CGSize = CGSize.zero {
       didSet {
          _searchTableView.frame.size = searchResultSize
@@ -347,7 +348,37 @@ open class KSTokenView: UIView {
          _updateTokenFieldLayout(style)
       }
    }
+
+   /// default is 0.0
+   open var tokenFieldBorderWidth: CGFloat {
+      get {
+         return _tokenField.layer.borderWidth
+      }
+      set {
+         _tokenField.layer.borderWidth = newValue
+      }
+   }
    
+   /// default is UIColor.black.cgColor
+   open var tokenFieldBorderColor: CGColor {
+      get {
+         return _tokenField.layer.borderColor ?? UIColor.black.cgColor
+      }
+      set {
+         _tokenField.layer.borderColor = newValue
+      }
+   }
+
+   /// default is 0.0
+   open var tokenFieldCornerRadius: CGFloat {
+      get {
+         return _tokenField.layer.cornerRadius
+      }
+      set {
+         _tokenField.layer.cornerRadius = newValue
+      }
+   }
+
    //MARK: - Constructors
    //__________________________________________________________________________________
    //
@@ -404,7 +435,8 @@ open class KSTokenView: UIView {
       _searchTableView.frame = CGRect(x: 0, y: frame.height, width: searchResultSize.width, height: searchResultSize.height)
       _searchTableView.delegate = self
       _searchTableView.dataSource = self
-      
+      _searchTableView.tableFooterView = UIView()
+    
       _hideSearchResults()
       _intrinsicContentHeight = _tokenField.bounds.height
       invalidateIntrinsicContentSize()
@@ -651,7 +683,10 @@ open class KSTokenView: UIView {
    open func selectedToken() -> KSToken? {
       return _tokenField.selectedToken
    }
-   
+
+   open func tokenize() {
+      _tokenField.tokenize()
+   }
    
    //MARK: - KSTokenFieldDelegates
    //__________________________________________________________________________________
@@ -683,6 +718,11 @@ open class KSTokenView: UIView {
          _tokenField.resignFirstResponder()
       }
       return false
+   }
+
+   public func tokenFieldResignFirstResponder() {
+      _ = _addTokenFromUntokenizedText(_tokenField)
+      _tokenField.resignFirstResponder()
    }
    
    //MARK: - Search
@@ -846,7 +886,8 @@ extension KSTokenView : KSTokenFieldDelegate {
 //
 extension KSTokenView : UITextFieldDelegate {
    public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-    
+      delegate?.tokenViewWillChangeText?(self)
+
       // If backspace is pressed
       if (_tokenField.tokens.count > 0 && _tokenField.text == KSTextEmpty && string.isEmpty == true && shouldDeleteTokenOnBackspace) {
          if (_lastToken() != nil) {
