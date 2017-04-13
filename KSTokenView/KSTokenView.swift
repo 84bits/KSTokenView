@@ -544,7 +544,10 @@ open class KSTokenView: UIView {
    fileprivate func _addTokenFromUntokenizedText(_ tokenField: KSTokenField) -> Bool {
       if (shouldAddTokenFromTextInput && tokenField.text != nil && tokenField.text != KSTextEmpty) {         
          let trimmedString = tokenField.text!.trimmingCharacters(in: CharacterSet.whitespaces)
-        addTokenWithTitle(trimmedString)
+         let addedToken = addTokenWithTitle(trimmedString)
+         if addedToken != nil {
+            delegate?.tokenView?(self, didAddToken: addedToken!)
+         }
          _hideSearchResults()
          return true
       }
