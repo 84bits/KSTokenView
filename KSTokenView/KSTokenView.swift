@@ -436,6 +436,7 @@ open class KSTokenView: UIView {
       _searchTableView.delegate = self
       _searchTableView.dataSource = self
       _searchTableView.tableFooterView = UIView()
+      _searchTableView.cellLayoutMarginsFollowReadableWidth = false
     
       _hideSearchResults()
       _intrinsicContentHeight = _tokenField.bounds.height
@@ -448,6 +449,9 @@ open class KSTokenView: UIView {
    override open func layoutSubviews() {
       _tokenField.updateLayout(false)
       _searchTableView.frame.size = CGSize(width: frame.width, height: searchResultSize.height)
+      if _showingSearchResult {
+         _showSearchResults()
+      }
    }
    
     override open var intrinsicContentSize : CGSize {
@@ -766,18 +770,30 @@ open class KSTokenView: UIView {
    }
    
     fileprivate func _showSearchResults() {
-        guard !_showingSearchResult else {return}
         _showingSearchResult = true
-        addSubview(_searchTableView)
+
+        if _searchTableView.superview !== self {
+            addSubview(_searchTableView)
+        }
+
+        if _searchTableView.isHidden == true {
+            _searchTableView.isHidden = false
+        }
+        
         let tokenFieldHeight = _tokenField.frame.height
-        _searchTableView.isHidden = false
-        _changeHeight(tokenFieldHeight)
-        delegate?.tokenViewDidShowSearchResults?(self)
+        if self.frame.size.height == tokenFieldHeight {
+            _changeHeight(tokenFieldHeight)
+            delegate?.tokenViewDidShowSearchResults?(self)
+        }
     }
    
     fileprivate func _hideSearchResults() {
-        guard _showingSearchResult else {return}
         _showingSearchResult = false
+        
+        if _searchTableView.superview !== self && _searchTableView.isHidden == true && self.frame.size.height == _tokenField.frame.height {
+            return
+        }
+
         let searchTableView = self._searchTableView
         _changeHeight(_tokenField.frame.height) {
             searchTableView.isHidden = true
