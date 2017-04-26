@@ -345,12 +345,12 @@ open class KSTokenField: UITextField {
    /**
    Tokenizes the layout
    */
-   func tokenize() {
+   func tokenize(_ shouldUpdateText: Bool = true) {
       _state = .opened
       for token: KSToken in tokens {
          _insertToken(token, shouldLayout: false)
       }
-      updateLayout()
+      updateLayout(shouldUpdateText)
    }
    
    /**

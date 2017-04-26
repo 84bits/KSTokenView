@@ -691,8 +691,8 @@ open class KSTokenView: UIView {
       return _tokenField.selectedToken
    }
 
-   open func tokenize() {
-      _tokenField.tokenize()
+   open func tokenize(_ shouldUpdateText: Bool = true) {
+      _tokenField.tokenize(shouldUpdateText)
    }
    
    //MARK: - KSTokenFieldDelegates

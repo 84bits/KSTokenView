@@ -109,6 +109,7 @@ open class KSToken : UIControl {
       self.object = object
       super.init(frame: CGRect.zero)
       backgroundColor = UIColor.clear
+      contentMode = .left
    }
    
    //MARK: - Drawing code
