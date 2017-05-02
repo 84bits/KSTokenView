@@ -908,7 +908,7 @@ extension KSTokenView : KSTokenFieldDelegate {
 extension KSTokenView : UITextFieldDelegate {
    public func textFieldShouldClear(_ textField: UITextField) -> Bool {
       deleteAllTokens()
-      _showEmptyResults()
+      _hideSearchResults()
       return true
    }
 
