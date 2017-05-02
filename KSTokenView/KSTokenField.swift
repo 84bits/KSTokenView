@@ -168,6 +168,7 @@ open class KSTokenField: UITextField {
       text = KSTextEmpty
       backgroundColor = UIColor.white
       clipsToBounds = true
+      self.clearButtonMode = .whileEditing
       _state = .closed
       
       _setScrollRect()
@@ -490,14 +491,14 @@ open class KSTokenField: UITextField {
       if (!_setupCompleted) {return .zero}
       
       if (tokens.count == 0 || _caretPoint == nil) {
-         return CGRect(x: _leftViewRect().width + initialX + _bufferX!, y: getPositionY(lineNumber), width: bounds.size.width-5, height: bounds.size.height)
+         return CGRect(x: _leftViewRect().width + initialX + _bufferX!, y: getPositionY(lineNumber), width: bounds.size.width - 5 - 20, height: bounds.size.height)
       }
       
       if (tokens.count != 0 && _state == .closed) {
-         return CGRect(x: _leftViewRect().maxX + initialX + _bufferX!, y: getPositionY(1), width: (frame.size.width - _caretPoint!.x - _marginX!), height: bounds.size.height)
+         return CGRect(x: _leftViewRect().maxX + initialX + _bufferX!, y: getPositionY(1), width: (frame.size.width - _caretPoint!.x - _marginX! - 20), height: bounds.size.height)
       }
       
-      return CGRect(x: _caretPoint!.x, y: floor((_caretPoint!.y - font!.lineHeight - (_marginY!))), width: (frame.size.width - _caretPoint!.x - _marginX!), height: bounds.size.height)
+      return CGRect(x: _caretPoint!.x, y: floor((_caretPoint!.y - font!.lineHeight - (_marginY!))), width: (frame.size.width - _caretPoint!.x - _marginX! - 20), height: bounds.size.height)
    }
     
    fileprivate func getPositionY(_ lineNumber: Int) -> CGFloat {

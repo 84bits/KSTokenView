@@ -904,6 +904,12 @@ extension KSTokenView : KSTokenFieldDelegate {
 //__________________________________________________________________________________
 //
 extension KSTokenView : UITextFieldDelegate {
+   public func textFieldShouldClear(_ textField: UITextField) -> Bool {
+      deleteAllTokens()
+      _showEmptyResults()
+      return true
+   }
+
    public func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
       delegate?.tokenViewWillChangeText?(self)
 
