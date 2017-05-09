@@ -70,7 +70,8 @@ import UIKit
    @objc optional func tokenViewDidEndEditing(_ tokenView: KSTokenView)
    @objc optional func tokenViewWillChangeText(_ tokenView: KSTokenView)
     
-   func tokenView(_ token: KSTokenView, performSearchWithString string: String, completion: ((_ results: Array<AnyObject>) -> Void)?)
+   @objc optional func tokenView(_ token: KSTokenView, titleForHeaderInSection section: Int) -> String?
+   func tokenView(_ token: KSTokenView, performSearchWithString string: String, completion: ((_ results: [[AnyObject]]) -> Void)?)
    func tokenView(_ token: KSTokenView, displayTitleForObject object: AnyObject) -> String
    @objc optional func tokenView(_ token: KSTokenView, withObject object: AnyObject, tableView: UITableView, cellForRowAtIndexPath indexPath: IndexPath) -> UITableViewCell
    @objc optional func tokenView(_ token: KSTokenView, didSelectRowAtIndexPath indexPath: IndexPath)
@@ -98,10 +99,10 @@ open class KSTokenView: UIView {
    //
    fileprivate var _tokenField: KSTokenField!
    fileprivate var _searchTableView: UITableView = UITableView(frame: .zero, style: UITableViewStyle.plain)
-   fileprivate var _resultArray = [AnyObject]()
+   fileprivate var _resultArray = [[AnyObject]]()
    fileprivate var _showingSearchResult = false
    fileprivate var _indicator = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.gray)
-   fileprivate let _searchResultHeight: CGFloat = 220.0
+   fileprivate let _searchResultHeight: CGFloat = 248.0
    fileprivate var _lastSearchString: String = ""
    fileprivate var _intrinsicContentHeight: CGFloat = UIViewNoIntrinsicMetric
    
@@ -156,7 +157,7 @@ open class KSTokenView: UIView {
       }
    }
    
-   /// Default is (TokenViewWidth, 220)
+   /// Default is (TokenViewWidth, 248)
    open var searchResultSize: CGSize = CGSize.zero {
       didSet {
          _searchTableView.frame.size = searchResultSize
@@ -431,11 +432,12 @@ open class KSTokenView: UIView {
       _indicator.stopAnimating()
       _indicator.color = activityIndicatorColor
       
+      _resultArray.append([AnyObject]())
       searchResultSize = CGSize(width: frame.width, height: _searchResultHeight)
       _searchTableView.frame = CGRect(x: 0, y: frame.height, width: searchResultSize.width, height: searchResultSize.height)
       _searchTableView.delegate = self
       _searchTableView.dataSource = self
-      _searchTableView.tableFooterView = UIView()
+      _searchTableView.separatorStyle = .none
       _searchTableView.cellLayoutMarginsFollowReadableWidth = false
     
       _hideSearchResults()
@@ -531,6 +533,14 @@ open class KSTokenView: UIView {
    */
    open func tokens () -> Array<KSToken>? {
       return _tokenField.tokens
+   }
+   
+   open func getAutocompleteResults() -> [[AnyObject]] {
+      return _resultArray
+   }
+
+   open func getMaxSearchResultHeight() -> CGFloat {
+      return _searchResultHeight
    }
    
    //MARK: - Add Token
@@ -753,20 +763,26 @@ open class KSTokenView: UIView {
       let trimmedSearchString = string.trimmingCharacters(in: CharacterSet.whitespaces)
       delegate?.tokenView(self, performSearchWithString:trimmedSearchString, completion: { (results) -> Void in
          self._hideActivityIndicator()
-         if (results.count > 0) {
+         var count = 0
+         results.forEach({ count += $0.count })
+         if (count > 0) {
             self._displayData(results)
          }
       })
    }
    
-   fileprivate func _displayData(_ results: Array<AnyObject>) {
-      _resultArray = _filteredSearchResults(results)
+   fileprivate func _displayData(_ results: [[AnyObject]]) {
+      _resultArray = [[AnyObject]]()
+      for result in results {
+         _resultArray.append(_filteredSearchResults(result))
+      }
       _searchTableView.reloadData()
       _showSearchResults()
    }
    
    fileprivate func _showEmptyResults() {
       _resultArray.removeAll(keepingCapacity: false)
+      _resultArray.append([AnyObject]())
       _searchTableView.reloadData()
       _showSearchResults()
    }
@@ -986,7 +1002,7 @@ extension KSTokenView : UITableViewDelegate {
    
    public func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
       delegate?.tokenView?(self, didSelectRowAtIndexPath: indexPath)
-      let object: AnyObject = _resultArray[(indexPath as NSIndexPath).row]
+      let object: AnyObject = _resultArray[indexPath.section][indexPath.item]
       let title  = delegate?.tokenView(self, displayTitleForObject: object)
       let token = KSToken(title: title!, object: object)
       addToken(token)
@@ -995,7 +1011,7 @@ extension KSTokenView : UITableViewDelegate {
          _hideSearchResults()
          
       } else if (!shouldDisplayAlreadyTokenized) {
-         _resultArray.remove(at: (indexPath as NSIndexPath).row)
+         _resultArray[indexPath.section].remove(at: indexPath.item)
          tableView.deleteRows(at: [indexPath], with: UITableViewRowAnimation.left)
       }
    }
@@ -1006,13 +1022,20 @@ extension KSTokenView : UITableViewDelegate {
 //
 extension KSTokenView : UITableViewDataSource {
    
-   public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+   public func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+      return delegate?.tokenView?(self, titleForHeaderInSection: section)
+   }
+   
+   public func numberOfSections(in tableView: UITableView) -> Int {
       return _resultArray.count
    }
    
+   public func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+      return _resultArray[section].count
+   }
+   
    public func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-      
-      var cell: UITableViewCell? = delegate?.tokenView?(self, withObject: _resultArray[(indexPath as NSIndexPath).row], tableView: tableView, cellForRowAtIndexPath: indexPath)
+      var cell: UITableViewCell? = delegate?.tokenView?(self, withObject: _resultArray[indexPath.section][indexPath.item], tableView: tableView, cellForRowAtIndexPath: indexPath)
       if cell != nil {
          return cell!
       }
@@ -1021,11 +1044,24 @@ extension KSTokenView : UITableViewDataSource {
       cell = tableView.dequeueReusableCell(withIdentifier: cellIdentifier) as UITableViewCell?
       if (cell == nil) {
          cell = UITableViewCell(style: UITableViewCellStyle.default, reuseIdentifier: cellIdentifier)
+         let separatorView = UIView(frame: CGRect(x: 0, y: cell!.frame.size.height - 0.5, width: cell!.frame.size.width, height: 1))
+         separatorView.tag = 1
+         separatorView.backgroundColor = tableView.separatorColor
+         separatorView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+         cell!.addSubview(separatorView)
       }
       
-      let title = delegate?.tokenView(self, displayTitleForObject: _resultArray[(indexPath as NSIndexPath).row])
+      let title = delegate?.tokenView(self, displayTitleForObject: _resultArray[indexPath.section][indexPath.item])
       cell!.textLabel!.text = (title != nil) ? title : "No Title"
       cell!.selectionStyle = UITableViewCellSelectionStyle.none
+      cell!.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
+      
+      let separatorView = cell!.viewWithTag(1)
+      if indexPath.item == _resultArray[indexPath.section].count - 1 {
+         separatorView?.isHidden = true
+      } else {
+         separatorView?.isHidden = false
+      }
       return cell!
    }
 }
