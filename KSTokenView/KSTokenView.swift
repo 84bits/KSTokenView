@@ -1053,6 +1053,7 @@ extension KSTokenView : UITableViewDataSource {
       
       let title = delegate?.tokenView(self, displayTitleForObject: _resultArray[indexPath.section][indexPath.item])
       cell!.textLabel!.text = (title != nil) ? title : "No Title"
+      cell!.textLabel!.lineBreakMode = .byTruncatingMiddle
       cell!.selectionStyle = UITableViewCellSelectionStyle.none
       cell!.separatorInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
       
