@@ -73,6 +73,7 @@ import UIKit
    @objc optional func tokenView(_ token: KSTokenView, titleForHeaderInSection section: Int) -> String?
    func tokenView(_ token: KSTokenView, performSearchWithString string: String, completion: ((_ results: [[AnyObject]]) -> Void)?)
    func tokenView(_ token: KSTokenView, displayTitleForObject object: AnyObject) -> String
+   func tokenView(_ token: KSTokenView, displayAutocompleteTitleForObject object: AnyObject) -> String
    @objc optional func tokenView(_ token: KSTokenView, withObject object: AnyObject, tableView: UITableView, cellForRowAtIndexPath indexPath: IndexPath) -> UITableViewCell
    @objc optional func tokenView(_ token: KSTokenView, didSelectRowAtIndexPath indexPath: IndexPath)
    
@@ -1051,7 +1052,7 @@ extension KSTokenView : UITableViewDataSource {
          cell!.addSubview(separatorView)
       }
       
-      let title = delegate?.tokenView(self, displayTitleForObject: _resultArray[indexPath.section][indexPath.item])
+      let title = delegate?.tokenView(self, displayAutocompleteTitleForObject: _resultArray[indexPath.section][indexPath.item])
       cell!.textLabel!.text = (title != nil) ? title : "No Title"
       cell!.textLabel!.lineBreakMode = .byTruncatingMiddle
       cell!.selectionStyle = UITableViewCellSelectionStyle.none
